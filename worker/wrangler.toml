@@ -1,0 +1,31 @@
+name = "mediagrab-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Free tier: 100,000 requests/day
+# To scale: deploy worker-2, worker-3 etc (each gets 100k free)
+
+[vars]
+ENVIRONMENT = "production"
+
+# Optional: Cloudflare KV for rate limiting
+# Create with: wrangler kv:namespace create "RATE_LIMITS"
+# Then uncomment:
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+# Optional: Cloudflare D1 for analytics
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "mediagrab"
+# database_id = "YOUR_D1_DATABASE_ID"
+
+[build]
+command = ""
+
+# Routes (after setting up custom domain)
+# [[routes]]
+# pattern = "api.yourdomain.com/*"
+# zone_name = "yourdomain.com"
