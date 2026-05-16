@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediaGrab – Free Video & Image Downloader</title>
+<meta name="description" content="Download videos and images from YouTube, Twitter/X, Instagram, TikTok, Reddit, Pinterest. 100% free, no limits, no watermarks. Powered by Cloudflare.">
+<meta name="keywords" content="youtube thumbnail downloader, twitter video downloader, instagram downloader, tiktok downloader, reddit video downloader, free video downloader">
+
+<!-- Open Graph -->
+<meta property="og:title" content="MediaGrab – Free Video & Image Downloader">
+<meta property="og:description" content="Download from YouTube, Twitter, Instagram, TikTok, Reddit, Pinterest. Free forever.">
+<meta property="og:type" content="website">
+
+<!-- Canonical -->
+<link rel="canonical" href="https://mediagrab.pages.dev/">
+
+<!-- Preconnect for speed -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #f0f0f5;
+    --text-muted: #888899;
+    --text-dim: #555566;
+    --accent: #6c63ff;
+    --accent-glow: rgba(108,99,255,0.3);
+    --accent2: #ff6b9d;
+    --green: #00d68f;
+    --yellow: #ffd60a;
+    --red: #ff4757;
+    --radius: 12px;
+    --radius-lg: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 600px; height: 600px; background: rgba(108,99,255,0.12); top: -200px; left: -100px; }
+  .blob-2 { width: 400px; height: 400px; background: rgba(255,107,157,0.08); bottom: -100px; right: -50px; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 20px;
+    text-align: center;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, #6c63ff, #ff6b9d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 17px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+
+  .badges {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--surface);
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── MAIN CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 32px;
+    transition: border-color 0.2s;
+  }
+
+  .card:focus-within {
+    border-color: rgba(108,99,255,0.4);
+  }
+
+  /* Platform tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  .tab-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Input area */
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .url-input:focus {
+    border-color: rgba(108,99,255,0.5);
+  }
+
+  .url-input::placeholder { color: var(--text-dim); }
+
+  .btn-fetch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+
+  .btn-fetch:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+  .btn-fetch:active { transform: translateY(0); }
+  .btn-fetch:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 20px;
+    padding: 16px;
+  }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESULTS ── */
+  .results { display: none; margin-top: 24px; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .platform-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .platform-pill.youtube { background: rgba(255,0,0,0.15); color: #ff4757; }
+  .platform-pill.twitter { background: rgba(29,161,242,0.15); color: #1da1f2; }
+  .platform-pill.instagram { background: rgba(193,53,132,0.15); color: #c13584; }
+  .platform-pill.tiktok { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; }
+  .platform-pill.reddit { background: rgba(255,69,0,0.15); color: #ff4500; }
+  .platform-pill.pinterest { background: rgba(189,8,28,0.15); color: #bd081c; }
+
+  .media-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Thumbnail grid */
+  .thumb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .thumb-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .thumb-item:hover { border-color: var(--border-hover); }
+
+  .thumb-img {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+    background: var(--surface2);
+  }
+
+  .thumb-meta {
+    padding: 12px;
+  }
+
+  .thumb-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .btn-dl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    padding: 9px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .btn-dl:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  /* Video quality list */
+  .quality-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .quality-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+  }
+
+  .quality-item:hover { border-color: var(--border-hover); }
+
+  .quality-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(108,99,255,0.15);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* Info note */
+  .note-box {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(255,214,10,0.08);
+    border: 1px solid rgba(255,214,10,0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #ffd60a;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Error */
+  .error-box {
+    padding: 16px;
+    background: rgba(255,71,87,0.08);
+    border: 1px solid rgba(255,71,87,0.2);
+    border-radius: var(--radius);
+    color: var(--red);
+    font-size: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .how-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .how-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .how-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .how-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── PLATFORMS ── */
+  .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .platform-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .platform-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  .platform-card-icon { font-size: 24px; margin-bottom: 8px; }
+  .platform-card-name { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0 32px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  footer a { color: var(--text-muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  /* ── GALLERY GRID ── */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .card { padding: 20px; }
+    .input-row { flex-direction: column; }
+    .tabs { gap: 4px; }
+    .tab { padding: 7px 12px; font-size: 12px; }
+    h1 { font-size: 28px; }
+  }
+
+  /* Utils */
+  .hidden { display: none !important; }
+  .flex-center { display: flex; align-items: center; justify-content: center; }
+  .mt-16 { margin-top: 16px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      MediaGrab
+    </div>
+    <h1>Download anything.<br><span>Instantly. Free.</span></h1>
+    <p class="subtitle">Grab videos, thumbnails & images from<br>YouTube, Twitter, Instagram, TikTok, Reddit, Pinterest.</p>
+    <div class="badges">
+      <span class="badge"><span class="badge-dot" style="background:#00d68f"></span> Zero cost</span>
+      <span class="badge"><span class="badge-dot" style="background:#6c63ff"></span> No limits</span>
+      <span class="badge"><span class="badge-dot" style="background:#ffd60a"></span> No watermark</span>
+      <span class="badge"><span class="badge-dot" style="background:#ff6b9d"></span> No signup</span>
+    </div>
+  </header>
+
+  <!-- Main card -->
+  <div class="card" id="mainCard">
+    <!-- Platform tabs -->
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-platform="youtube" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        YouTube
+      </button>
+      <button class="tab" data-platform="twitter" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Twitter/X
+      </button>
+      <button class="tab" data-platform="instagram" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram
+      </button>
+      <button class="tab" data-platform="tiktok" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.18a8.16 8.16 0 0 0 4.77 1.52V7.26a4.85 4.85 0 0 1-1-.57z"/></svg>
+        TikTok
+      </button>
+      <button class="tab" data-platform="reddit" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+        Reddit
+      </button>
+      <button class="tab" data-platform="pinterest" onclick="selectPlatform(this)">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        Pinterest
+      </button>
+    </div>
+
+    <!-- URL input -->
+    <div class="input-row">
+      <input
+        type="url"
+        id="urlInput"
+        class="url-input"
+        placeholder="https://youtube.com/watch?v=..."
+        autocomplete="off"
+        spellcheck="false"
+        onkeydown="if(event.key==='Enter') fetchMedia()"
+      />
+      <button class="btn-fetch" id="fetchBtn" onclick="fetchMedia()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+        Fetch
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span id="loadingText">Fetching media info…</span>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results"></div>
+  </div>
+
+  <!-- How it works -->
+  <p class="section-label">How it works</p>
+  <div class="how-grid">
+    <div class="how-item">
+      <div class="how-num">01 / PASTE</div>
+      <div class="how-title">Drop your URL</div>
+      <div class="how-desc">Copy any public link from YouTube, Twitter, Instagram, TikTok, Reddit or Pinterest.</div>
+    </div>
+    <div class="how-item">
+      <div class="how-num">02 / FETCH</div>
+      <div class="how-title">We find the media</div>
+      <div class="how-desc">Our Cloudflare Worker extracts the direct media URL in milliseconds, from edge nodes worldwide.</div>
+    </div>
+    <div class="how-item">
+      <div class="how-num">03 / SAVE</div>
+      <div class="how-title">Download instantly</div>
+      <div class="how-desc">Your browser downloads directly. No files stored on our servers. Zero bandwidth cost to us.</div>
+    </div>
+  </div>
+
+  <!-- Platform support quick-click -->
+  <p class="section-label">Supported platforms</p>
+  <div class="platform-grid">
+    <div class="platform-card" onclick="quickPlatform('youtube','https://youtube.com/watch?v=dQw4w9WgXcQ')">
+      <div class="platform-card-icon">▶️</div>
+      <div class="platform-card-name">YouTube</div>
+    </div>
+    <div class="platform-card" onclick="quickPlatform('twitter','')">
+      <div class="platform-card-icon">𝕏</div>
+      <div class="platform-card-name">Twitter/X</div>
+    </div>
+    <div class="platform-card" onclick="quickPlatform('instagram','')">
+      <div class="platform-card-icon">📸</div>
+      <div class="platform-card-name">Instagram</div>
+    </div>
+    <div class="platform-card" onclick="quickPlatform('tiktok','')">
+      <div class="platform-card-icon">🎵</div>
+      <div class="platform-card-name">TikTok</div>
+    </div>
+    <div class="platform-card" onclick="quickPlatform('reddit','')">
+      <div class="platform-card-icon">👽</div>
+      <div class="platform-card-name">Reddit</div>
+    </div>
+    <div class="platform-card" onclick="quickPlatform('pinterest','')">
+      <div class="platform-card-icon">📌</div>
+      <div class="platform-card-name">Pinterest</div>
+    </div>
+  </div>
+
+  <footer>
+    <p>MediaGrab — 100% free, powered by <a href="https://workers.cloudflare.com" target="_blank">Cloudflare Workers</a> &amp; Pages</p>
+    <p style="margin-top:8px">Only download content you own or have permission to download. Respect copyright laws.</p>
+  </footer>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// Change this to your deployed worker URL
+const WORKER_URL = localStorage.getItem('workerUrl') || 'https://mediagrab-api.YOUR-SUBDOMAIN.workers.dev';
+
+let currentPlatform = 'youtube';
+
+// ── PLATFORM SELECTION ────────────────────────────────────────────────────────
+function selectPlatform(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentPlatform = btn.dataset.platform;
+
+  const placeholders = {
+    youtube:   'https://youtube.com/watch?v=...',
+    twitter:   'https://twitter.com/user/status/...',
+    instagram: 'https://instagram.com/p/...',
+    tiktok:    'https://tiktok.com/@user/video/...',
+    reddit:    'https://reddit.com/r/subreddit/comments/...',
+    pinterest: 'https://pinterest.com/pin/...',
+  };
+  document.getElementById('urlInput').placeholder = placeholders[currentPlatform] || '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+}
+
+function quickPlatform(platform, url) {
+  const btn = document.querySelector(`.tab[data-platform="${platform}"]`);
+  if (btn) selectPlatform(btn);
+  if (url) {
+    document.getElementById('urlInput').value = url;
+    fetchMedia();
+  } else {
+    document.getElementById('urlInput').focus();
+  }
+}
+
+// ── FETCH MEDIA ───────────────────────────────────────────────────────────────
+async function fetchMedia() {
+  const urlVal = document.getElementById('urlInput').value.trim();
+  if (!urlVal) { showError('Please paste a URL first.'); return; }
+
+  const loadingEl = document.getElementById('loading');
+  const resultsEl = document.getElementById('results');
+  const fetchBtn  = document.getElementById('fetchBtn');
+
+  // Detect platform from URL
+  const detected = detectPlatform(urlVal);
+  if (detected && detected !== currentPlatform) {
+    const btn = document.querySelector(`.tab[data-platform="${detected}"]`);
+    if (btn) selectPlatform(btn);
+  }
+
+  loadingEl.style.display = 'flex';
+  resultsEl.style.display = 'none';
+  resultsEl.innerHTML = '';
+  fetchBtn.disabled = true;
+
+  try {
+    const apiUrl = `${WORKER_URL}/api/info?url=${encodeURIComponent(urlVal)}&platform=${currentPlatform}`;
+    const r = await fetch(apiUrl);
+    const data = await r.json();
+
+    if (!data.ok) {
+      showError(data.error || 'Failed to fetch media.');
+      return;
+    }
+
+    renderResults(data);
+  } catch (e) {
+    // If worker URL not configured, show setup prompt
+    if (WORKER_URL.includes('YOUR-SUBDOMAIN')) {
+      showSetupPrompt();
+    } else {
+      showError('Network error: ' + e.message);
+    }
+  } finally {
+    loadingEl.style.display = 'none';
+    fetchBtn.disabled = false;
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderResults(data) {
+  const el = document.getElementById('results');
+  el.style.display = 'block';
+
+  const platformClass = data.platform || currentPlatform;
+  const header = `
+    <div class="results-header">
+      <span class="platform-pill ${platformClass}">${platformClass}</span>
+      <span class="media-title">${escHtml(data.title || data.text || 'Media found')}</span>
+      ${data.author ? `<span style="font-size:12px;color:var(--text-dim)">@${escHtml(data.author)}</span>` : ''}
+    </div>
+  `;
+
+  let body = '';
+
+  // YouTube thumbnails
+  if (data.type === 'thumbnails' && data.thumbnails?.length) {
+    body = `<div class="thumb-grid">` +
+      data.thumbnails.map(t => `
+        <div class="thumb-item">
+          <img class="thumb-img" src="${escHtml(t.url)}" alt="${escHtml(t.label)}" loading="lazy">
+          <div class="thumb-meta">
+            <div class="thumb-label">${escHtml(t.label)}</div>
+            <a href="${escHtml(t.url)}" download="thumbnail_${data.id}_${t.key}.jpg" target="_blank" class="btn-dl">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+              Download
+            </a>
+          </div>
+        </div>
+      `).join('') +
+    `</div>`;
+  }
+
+  // Twitter video qualities
+  else if (data.type === 'video' && data.videos?.length) {
+    body = `<div class="quality-list">` +
+      data.videos.map((v, i) => `
+        <div class="quality-item">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="quality-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              ${escHtml(v.label)}
+            </span>
+            <span style="font-size:12px;color:var(--text-muted)">${v.bitrate ? Math.round(v.bitrate/1000) + ' kbps' : ''}</span>
+            ${i === 0 ? '<span style="font-size:11px;background:rgba(0,214,143,0.15);color:#00d68f;padding:3px 8px;border-radius:4px;font-weight:600">BEST</span>' : ''}
+          </div>
+          <a href="${escHtml(v.url)}" download target="_blank" class="btn-dl" style="width:auto;padding:8px 16px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+            Download
+          </a>
+        </div>
+      `).join('') +
+    `</div>`;
+    if (data.note) body += noteBox(data.note);
+  }
+
+  // Twitter/Reddit images
+  else if (data.type === 'images' && data.photos?.length) {
+    body = `<div class="gallery-grid">` +
+      data.photos.map(p => `
+        <div class="thumb-item">
+          <img class="thumb-img" src="${escHtml(p.url)}" loading="lazy" style="aspect-ratio:1">
+          <div class="thumb-meta">
+            <a href="${escHtml(p.url)}" download target="_blank" class="btn-dl">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+              Download
+            </a>
+          </div>
+        </div>
+      `).join('') +
+    `</div>`;
+  }
+
+  // Reddit gallery
+  else if (data.type === 'gallery' && data.images?.length) {
+    body = `<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">${data.count} images in gallery</p>
+    <div class="gallery-grid">` +
+      data.images.map((img, i) => `
+        <div class="thumb-item">
+          <img class="thumb-img" src="${escHtml(img.url)}" loading="lazy" style="aspect-ratio:1;object-fit:cover">
+          <div class="thumb-meta">
+            <a href="${escHtml(img.url)}" download target="_blank" class="btn-dl">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+              #${i+1}
+            </a>
+          </div>
+        </div>
+      `).join('') +
+    `</div>`;
+  }
+
+  // Reddit video
+  else if (data.type === 'video' && data.url) {
+    body = `
+      <div class="quality-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="quality-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            ${data.width ? data.width+'×'+data.height : 'Video'}
+          </span>
+        </div>
+        <a href="${escHtml(data.url)}" download target="_blank" class="btn-dl" style="width:auto;padding:8px 16px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          Download
+        </a>
+      </div>
+    `;
+    if (data.note) body += noteBox(data.note);
+  }
+
+  // Single image (Instagram, Pinterest, Reddit image, TikTok thumbnail)
+  else if (data.thumbnail || data.url) {
+    const imgUrl = data.thumbnail || data.url;
+    body = `
+      <div class="thumb-item" style="max-width:380px">
+        <img class="thumb-img" src="${escHtml(imgUrl)}" loading="lazy" style="aspect-ratio:auto">
+        <div class="thumb-meta">
+          <a href="${escHtml(imgUrl)}" download target="_blank" class="btn-dl">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+            Download Thumbnail
+          </a>
+          ${data.embedUrl ? `<a href="${escHtml(data.embedUrl)}" target="_blank" class="btn-dl mt-16" style="margin-top:8px">Open Original Post ↗</a>` : ''}
+        </div>
+      </div>
+    `;
+    if (data.note) body += noteBox(data.note);
+  }
+
+  else {
+    body = `<p style="color:var(--text-muted);font-size:14px">No downloadable media found.</p>`;
+  }
+
+  el.innerHTML = header + body;
+}
+
+function noteBox(text) {
+  return `<div class="note-box mt-16">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    ${escHtml(text)}
+  </div>`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('results');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="error-box">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    ${escHtml(msg)}
+  </div>`;
+}
+
+function showSetupPrompt() {
+  const el = document.getElementById('results');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="padding:24px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:12px">
+      <p style="font-size:14px;font-weight:600;margin-bottom:8px;color:#9d98ff">⚙️ Setup required</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Enter your Cloudflare Worker URL to connect the backend:</p>
+      <div class="input-row">
+        <input type="url" id="workerUrlInput" class="url-input" placeholder="https://mediagrab-api.YOUR-SUBDOMAIN.workers.dev" value="${WORKER_URL.includes('YOUR-SUBDOMAIN') ? '' : WORKER_URL}">
+        <button onclick="saveWorkerUrl()" class="btn-fetch">Save</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-dim);margin-top:10px">Deploy the worker with <code style="font-family:'DM Mono';background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px">wrangler deploy</code> then paste the URL above.</p>
+    </div>
+  `;
+}
+
+function saveWorkerUrl() {
+  const val = document.getElementById('workerUrlInput').value.trim();
+  if (!val) return;
+  localStorage.setItem('workerUrl', val);
+  location.reload();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function detectPlatform(url) {
+  if (/youtu\.be|youtube\.com/i.test(url)) return 'youtube';
+  if (/twitter\.com|x\.com/i.test(url)) return 'twitter';
+  if (/instagram\.com/i.test(url)) return 'instagram';
+  if (/tiktok\.com/i.test(url)) return 'tiktok';
+  if (/reddit\.com/i.test(url)) return 'reddit';
+  if (/pinterest\.(com|co)/i.test(url)) return 'pinterest';
+  return null;
+}
+
+// Auto-detect platform when URL is pasted
+document.getElementById('urlInput').addEventListener('paste', (e) => {
+  setTimeout(() => {
+    const val = e.target.value.trim();
+    const p = detectPlatform(val);
+    if (p) {
+      const btn = document.querySelector(`.tab[data-platform="${p}"]`);
+      if (btn) selectPlatform(btn);
+    }
+  }, 50);
+});
+</script>
+</body>
+</html>
